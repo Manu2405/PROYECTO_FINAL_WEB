@@ -23,7 +23,7 @@ const decodeTokenOptional = (req, res, next) => {
 // Rutas públicas
 router.get('/', decodeTokenOptional, designController.getAll);
 router.get('/:id', designController.getById);
-router.post('/:id/like', designController.like);
+router.post('/:id/like', verifyToken, designController.toggleLike);
 
 // Rutas del artista (cargar/editar su portafolio)
 router.post('/', verifyToken, isArtist, upload.single('imagen'), designController.create);

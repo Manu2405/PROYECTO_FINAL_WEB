@@ -44,7 +44,10 @@ const reviewController = {
         return res.status(403).json({ error: 'No tienes permiso para calificar esta reserva' });
       }
 
-      // Verificar si ya tiene reseña para esta reserva
+      if (booking.estado !== 'finalizada') {
+        return res.status(400).json({ error: 'Solo puedes reseñar reservas finalizadas' });
+      }
+
       const existingReview = await Review.getByBooking(id_reserva);
       if (existingReview) {
         return res.status(400).json({ error: 'Ya has calificado esta reserva anteriormente' });

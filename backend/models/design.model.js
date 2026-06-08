@@ -3,7 +3,7 @@ const db = require('../config/db');
 const Design = {
   async getAll(filters = {}) {
     let query = `
-      SELECT d.*, u.nombre as artista_nombre, u.apellido as artista_apellido
+      SELECT d.*, u.nombre as artista_nombre, u.apellido as artista_apellido, u.foto_url as artista_foto_url
       FROM disenos d
       INNER JOIN usuarios u ON d.id_artista = u.id_usuario
       WHERE 1=1
@@ -24,15 +24,46 @@ const Design = {
       params.push(filters.id_artista);
     }
 
-    query += ' ORDER BY d.id_diseno DESC';
+    if (filters.sort === 'likes') {
+      query += ' ORDER BY d.likes DESC, d.id_diseno DESC';
+    } else if (filters.sort === 'newest') {
+      query += ' ORDER BY d.fecha_creacion DESC, d.id_diseno DESC';
+    } else {
+      query += ' ORDER BY d.id_diseno DESC';
+    }
 
     const [rows] = await db.query(query, params);
     return rows;
   },
 
+  async getLikedByUser(userId, designIds) {
+    if (!userId || !designIds.length) return [];
+    const placeholders = designIds.map(() => '?').join(',');
+    const [rows] = await db.query(
+      `SELECT id_diseno FROM diseno_likes WHERE id_usuario = ? AND id_diseno IN (${placeholders})`,
+      [userId, ...designIds]
+    );
+    return rows.map((r) => r.id_diseno);
+  },
+
+  async toggleLike(designId, userId) {
+    const [existing] = await db.query(
+      'SELECT id_diseno_like FROM diseno_likes WHERE id_diseno = ? AND id_usuario = ?',
+      [designId, userId]
+    );
+    if (existing.length) {
+      await db.query('DELETE FROM diseno_likes WHERE id_diseno = ? AND id_usuario = ?', [designId, userId]);
+      await db.query('UPDATE disenos SET likes = GREATEST(likes - 1, 0) WHERE id_diseno = ?', [designId]);
+      return { liked: false };
+    }
+    await db.query('INSERT INTO diseno_likes (id_usuario, id_diseno) VALUES (?, ?)', [userId, designId]);
+    await db.query('UPDATE disenos SET likes = likes + 1 WHERE id_diseno = ?', [designId]);
+    return { liked: true };
+  },
+
   async getById(id) {
     const [rows] = await db.query(`
-      SELECT d.*, u.nombre as artista_nombre, u.apellido as artista_apellido
+      SELECT d.*, u.nombre as artista_nombre, u.apellido as artista_apellido, u.foto_url as artista_foto_url
       FROM disenos d
       INNER JOIN usuarios u ON d.id_artista = u.id_usuario
       WHERE d.id_diseno = ?
@@ -74,10 +105,10 @@ const Design = {
     return true;
   },
 
-  async likeDesign(id) {
-    await db.query('UPDATE disenos SET likes = likes + 1 WHERE id_diseno = ?', [id]);
-    return true;
-  }
+  async getLikeCount(id) {
+    const [rows] = await db.query('SELECT likes FROM disenos WHERE id_diseno = ?', [id]);
+    return rows[0]?.likes || 0;
+  },
 };
 
 module.exports = Design;

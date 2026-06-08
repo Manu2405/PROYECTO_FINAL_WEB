@@ -5,8 +5,8 @@ const { verifyToken, isAdmin, isArtist } = require('../middlewares/auth');
 
 // Rutas públicas
 router.get('/', specialtyController.getAll);
-router.get('/:id', specialtyController.getById);
 router.get('/artist/:artistId', specialtyController.getArtistSpecialties);
+router.get('/:id', specialtyController.getById);
 
 // Guardar especialidades de un artista (artista logueado o admin editando)
 router.post('/artist', verifyToken, isArtist, specialtyController.updateArtistSpecialties);

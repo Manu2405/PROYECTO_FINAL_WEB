@@ -4,16 +4,19 @@ const User = require('../models/user.model');
 const pointsController = {
   async getMyLevel(req, res) {
     try {
+      if (req.user.rol !== 'cliente') {
+        return res.status(403).json({ error: 'Solo los clientes participan en el programa de fidelidad' });
+      }
+
       const clientId = req.user.id_usuario;
       const status = await Points.getClientLevel(clientId);
-      
+
       if (!status) {
-        // Inicializar si no tiene registro
         await Points.initializeClient(clientId);
         const newStatus = await Points.getClientLevel(clientId);
         return res.json(newStatus);
       }
-      
+
       res.json(status);
     } catch (error) {
       res.status(500).json({ error: 'Error al obtener nivel de puntos: ' + error.message });
@@ -22,6 +25,10 @@ const pointsController = {
 
   async getMyHistory(req, res) {
     try {
+      if (req.user.rol !== 'cliente') {
+        return res.status(403).json({ error: 'Solo los clientes participan en el programa de fidelidad' });
+      }
+
       const clientId = req.user.id_usuario;
       const history = await Points.getPointsHistory(clientId);
       res.json(history);
@@ -30,13 +37,31 @@ const pointsController = {
     }
   },
 
+  async searchClientsAdmin(req, res) {
+    try {
+      const { q } = req.query;
+      if (!q || q.trim().length < 2) {
+        return res.json([]);
+      }
+
+      const clients = await User.searchClients(q.trim());
+      res.json(clients);
+    } catch (error) {
+      res.status(500).json({ error: 'Error al buscar clientes: ' + error.message });
+    }
+  },
+
   async getClientLevelAdmin(req, res) {
     try {
       const clientId = req.params.clientId;
       const client = await User.findById(clientId);
-      
+
       if (!client) {
         return res.status(404).json({ error: 'Cliente no encontrado' });
+      }
+
+      if (client.rol !== 'cliente') {
+        return res.status(400).json({ error: 'Solo los clientes tienen programa de fidelidad' });
       }
 
       const status = await Points.getClientLevel(clientId);
@@ -45,43 +70,31 @@ const pointsController = {
           id_usuario: client.id_usuario,
           nombre: client.nombre,
           apellido: client.apellido,
-          email: client.email
         },
-        fidelidad: status || { nivel_actual: 'Bronce', puntos_totales: 0 }
+        fidelidad: status || { nivel_actual: 'Bronce', puntos_totales: 0 },
       });
     } catch (error) {
       res.status(500).json({ error: 'Error al consultar nivel de fidelidad: ' + error.message });
     }
   },
 
-  async addPointsAdmin(req, res) {
+  async redeemDiscount(req, res) {
     try {
-      const { id_cliente, puntos, motivo } = req.body;
-
-      if (!id_cliente || puntos === undefined || !motivo) {
-        return res.status(400).json({ error: 'ID de cliente, puntos (positivo o negativo) y motivo son obligatorios' });
+      if (req.user.rol !== 'cliente') {
+        return res.status(403).json({ error: 'Solo los clientes pueden canjear puntos' });
       }
 
-      const client = await User.findById(id_cliente);
-      if (!client) {
-        return res.status(404).json({ error: 'Cliente no encontrado' });
-      }
-
-      const updatedLevel = await Points.addPoints(
-        parseInt(id_cliente),
-        parseInt(puntos),
-        `Ajuste Administrativo: ${motivo}`,
-        req.user.id_usuario // ID del admin que realiza el cambio como referencia
-      );
+      const { bloques } = req.body;
+      const result = await Points.redeemDiscount(req.user.id_usuario, bloques);
 
       res.json({
-        message: `Se ajustaron ${puntos} puntos con éxito.`,
-        fidelidad: updatedLevel
+        message: `Descuento del ${result.descuento_pendiente}% listo para tu proxima reserva`,
+        ...result,
       });
     } catch (error) {
-      res.status(500).json({ error: 'Error al ajustar puntos administrativamente: ' + error.message });
+      res.status(400).json({ error: error.message });
     }
-  }
+  },
 };
 
 module.exports = pointsController;

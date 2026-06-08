@@ -1,0 +1,3 @@
+export const BRAND_NAME = 'INKHOUSE';
+export const WHATSAPP_NUMBER = '59165242305';
+export const WHATSAPP_DISPLAY = '65242305';

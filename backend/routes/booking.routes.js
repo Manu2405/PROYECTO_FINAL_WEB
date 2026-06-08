@@ -4,6 +4,8 @@ const bookingController = require('../controllers/booking.controller');
 const { verifyToken, isAdmin, isArtist } = require('../middlewares/auth');
 const { upload } = require('../middlewares/upload');
 
+router.get('/disponibilidad/:artistId', bookingController.getAvailability);
+
 // Rutas de reservas del cliente
 router.get('/my-bookings', verifyToken, bookingController.getMyBookings);
 

@@ -60,13 +60,33 @@ const Booking = {
   },
 
   async create(data) {
-    const { id_cliente, id_artista, id_diseno, fecha_reserva, zona_cuerpo, tamano, descripcion, imagen_referencia_url, precio_estimado, adelanto } = data;
+    const {
+      id_cliente, id_artista, id_diseno, fecha_reserva, hora_fin, zona_cuerpo, tamano,
+      descripcion, imagen_referencia_url, precio_estimado, adelanto, descuento_porcentaje,
+      puntos_canjeados, duracion_horas, numero_sesiones, modo_sesiones,
+    } = data;
     const [result] = await db.query(
-      `INSERT INTO reservas (id_cliente, id_artista, id_diseno, fecha_reserva, zona_cuerpo, tamano, descripcion, imagen_referencia_url, precio_estimado, adelanto, estado)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente')`,
-      [id_cliente, id_artista, id_diseno || null, fecha_reserva, zona_cuerpo, tamano, descripcion || null, imagen_referencia_url || null, precio_estimado || 0, adelanto || 0]
+      `INSERT INTO reservas (id_cliente, id_artista, id_diseno, fecha_reserva, hora_fin, zona_cuerpo, tamano, descripcion, imagen_referencia_url, precio_estimado, adelanto, descuento_porcentaje, puntos_canjeados, duracion_horas, numero_sesiones, modo_sesiones, estado)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente')`,
+      [
+        id_cliente, id_artista, id_diseno || null, fecha_reserva, hora_fin || null,
+        zona_cuerpo, tamano, descripcion || null, imagen_referencia_url || null,
+        precio_estimado || 0, adelanto || 0, descuento_porcentaje || 0, puntos_canjeados || 0,
+        duracion_horas || 1, numero_sesiones || 1, modo_sesiones || 'unica',
+      ]
     );
     return result.insertId;
+  },
+
+  async getArtistBookingsOnDate(artistId, dateStr) {
+    const [rows] = await db.query(
+      `SELECT fecha_reserva, hora_fin, duracion_horas
+       FROM reservas
+       WHERE id_artista = ? AND DATE(fecha_reserva) = ? AND estado NOT IN ('cancelada')
+       ORDER BY fecha_reserva ASC`,
+      [artistId, dateStr]
+    );
+    return rows;
   },
 
   async updateStatus(id, estado, observaciones = null) {

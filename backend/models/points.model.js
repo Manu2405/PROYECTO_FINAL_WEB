@@ -63,6 +63,44 @@ const Points = {
     );
 
     return { nivel_actual: tier, puntos_totales: newTotal };
+  },
+
+  async redeemDiscount(clientId, bloques) {
+    await this.initializeClient(clientId);
+    const current = await this.getClientLevel(clientId);
+
+    if (current.descuento_pendiente > 0) {
+      throw new Error('Ya tienes un descuento pendiente para tu proxima reserva');
+    }
+
+    const bloquesNum = parseInt(bloques);
+    if (!bloquesNum || bloquesNum < 1 || bloquesNum > 3) {
+      throw new Error('Debes canjear entre 1 y 3 bloques (10% a 30%)');
+    }
+
+    const puntosNecesarios = bloquesNum * 100;
+    const descuento = bloquesNum * 10;
+
+    if (current.puntos_totales < puntosNecesarios) {
+      throw new Error('No tienes suficientes puntos');
+    }
+
+    await this.addPoints(clientId, -puntosNecesarios, `Canje de descuento ${descuento}%`, null);
+
+    await db.query(
+      'UPDATE niveles_clientes SET descuento_pendiente = ? WHERE id_cliente = ?',
+      [descuento, clientId]
+    );
+
+    const updated = await this.getClientLevel(clientId);
+    return { descuento_pendiente: descuento, puntos_usados: puntosNecesarios, fidelidad: updated };
+  },
+
+  async clearPendingDiscount(clientId) {
+    await db.query(
+      'UPDATE niveles_clientes SET descuento_pendiente = 0 WHERE id_cliente = ?',
+      [clientId]
+    );
   }
 };
 

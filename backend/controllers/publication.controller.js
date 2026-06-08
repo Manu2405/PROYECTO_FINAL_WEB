@@ -96,10 +96,12 @@ const publicationController = {
 
       // Recalcular y actualizar totales en la tabla de publicaciones
       const updatedTotals = await Publication.updateVoteCounts(publicationId);
+      const currentVote = await Vote.getVote(publicationId, userId);
 
       res.json({
         message: `Voto registrado (${actionResult})`,
-        ...updatedTotals
+        ...updatedTotals,
+        mi_voto: currentVote?.tipo_voto || null,
       });
     } catch (error) {
       res.status(500).json({ error: 'Error al votar en la publicación: ' + error.message });

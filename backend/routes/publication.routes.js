@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const publicationController = require('../controllers/publication.controller');
+const commentController = require('../controllers/comment.controller');
 const { verifyToken } = require('../middlewares/auth');
 const { upload } = require('../middlewares/upload');
 const jwt = require('jsonwebtoken');
@@ -32,5 +33,10 @@ router.post('/:id/vote', verifyToken, publicationController.vote);
 
 // Eliminar post
 router.delete('/:id', verifyToken, publicationController.delete);
+
+// Comentarios
+router.get('/:id/comments', decodeTokenOptional, commentController.getByPublication);
+router.post('/:id/comments', verifyToken, commentController.create);
+router.delete('/:id/comments/:commentId', verifyToken, commentController.delete);
 
 module.exports = router;

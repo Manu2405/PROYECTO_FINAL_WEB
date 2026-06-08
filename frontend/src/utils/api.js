@@ -51,6 +51,13 @@ export const api = {
     return handleResponse(res);
   },
 
+  async confirmAccount(token) {
+    const res = await fetch(`${API_URL}/usuarios/confirmar/${token}`, {
+      method: 'GET',
+    });
+    return handleResponse(res);
+  },
+
   async getProfile() {
     const res = await fetch(`${API_URL}/usuarios/profile`, {
       method: 'GET',
@@ -83,11 +90,28 @@ export const api = {
     return handleResponse(res);
   },
 
-  async updateUserRole(id, rol, id_sucursal) {
-    const res = await fetch(`${API_URL}/usuarios/${id}/role`, {
+  async createUserAdmin(data) {
+    const res = await fetch(`${API_URL}/usuarios`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async getUserById(id) {
+    const res = await fetch(`${API_URL}/usuarios/${id}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async updateUserAdmin(id, data) {
+    const res = await fetch(`${API_URL}/usuarios/${id}`, {
       method: 'PUT',
       headers: getHeaders(),
-      body: JSON.stringify({ rol, id_sucursal })
+      body: JSON.stringify(data),
     });
     return handleResponse(res);
   },
@@ -111,6 +135,11 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getBranchById(id) {
+    const res = await fetch(`${API_URL}/sucursales/${id}`, { method: 'GET' });
+    return handleResponse(res);
+  },
+
   async getBranchesAdmin() {
     const res = await fetch(`${API_URL}/sucursales/admin/all`, {
       method: 'GET',
@@ -120,22 +149,22 @@ export const api = {
   },
 
   async createBranch(data) {
-    const res = await fetch(`${API_URL}/sucursales`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(data)
-    });
-    return handleResponse(res);
-  },
+  const res = await fetch(`${API_URL}/sucursales`, {
+    method: 'POST',
+    headers: getHeaders(true),
+    body: data
+  });
+  return handleResponse(res);
+},
 
-  async updateBranch(id, data) {
-    const res = await fetch(`${API_URL}/sucursales/${id}`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(data)
-    });
-    return handleResponse(res);
-  },
+async updateBranch(id, data) {
+  const res = await fetch(`${API_URL}/sucursales/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(true),
+    body: data
+  });
+  return handleResponse(res);
+},
 
   async deleteBranch(id) {
     const res = await fetch(`${API_URL}/sucursales/${id}`, {
@@ -148,6 +177,13 @@ export const api = {
   // ==========================================
   // ESPECIALIDADES
   // ==========================================
+  async getArtistSpecialties(artistId) {
+    const res = await fetch(`${API_URL}/especialidades/artist/${artistId}`, {
+      method: 'GET'
+    });
+    return handleResponse(res);
+  },
+
   async getSpecialties() {
     const res = await fetch(`${API_URL}/especialidades`, {
       method: 'GET'
@@ -169,6 +205,15 @@ export const api = {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ nombre, descripcion })
+    });
+    return handleResponse(res);
+  },
+
+  async updateSpecialty(id, nombre, descripcion) {
+    const res = await fetch(`${API_URL}/especialidades/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ nombre, descripcion }),
     });
     return handleResponse(res);
   },
@@ -220,14 +265,37 @@ export const api = {
 
   async likeDesign(id) {
     const res = await fetch(`${API_URL}/disenos/${id}/like`, {
-      method: 'POST'
+      method: 'POST',
+      headers: getHeaders(),
     });
+    return handleResponse(res);
+  },
+
+  async getAvailability(artistId, fecha, duracion = 1) {
+    const res = await fetch(
+      `${API_URL}/reservas/disponibilidad/${artistId}?fecha=${fecha}&duracion=${duracion}`
+    );
+    return handleResponse(res);
+  },
+
+  async getAvailabilityMonth(artistId, year, month, duracion = 1) {
+    const res = await fetch(
+      `${API_URL}/reservas/disponibilidad/${artistId}?year=${year}&month=${month}&duracion=${duracion}`
+    );
     return handleResponse(res);
   },
 
   // ==========================================
   // RESERVAS
   // ==========================================
+  async getAllBookings() {
+    const res = await fetch(`${API_URL}/reservas`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getMyBookings() {
     const res = await fetch(`${API_URL}/reservas/my-bookings`, {
       method: 'GET',
@@ -430,6 +498,35 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getPublicationComments(id) {
+    const headers = {};
+    const token = localStorage.getItem('token');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const res = await fetch(`${API_URL}/publicaciones/${id}/comments`, {
+      method: 'GET',
+      headers
+    });
+    return handleResponse(res);
+  },
+
+  async createPublicationComment(id, contenido) {
+    const res = await fetch(`${API_URL}/publicaciones/${id}/comments`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ contenido })
+    });
+    return handleResponse(res);
+  },
+
+  async deletePublicationComment(publicationId, commentId) {
+    const res = await fetch(`${API_URL}/publicaciones/${publicationId}/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   // ==========================================
   // PROGRAMA DE FIDELIZACIÓN (PUNTOS)
   // ==========================================
@@ -437,6 +534,15 @@ export const api = {
     const res = await fetch(`${API_URL}/fidelidad/my-level`, {
       method: 'GET',
       headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async redeemPoints(bloques) {
+    const res = await fetch(`${API_URL}/fidelidad/canjear`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ bloques })
     });
     return handleResponse(res);
   },
@@ -449,19 +555,18 @@ export const api = {
     return handleResponse(res);
   },
 
-  async getClientPointsAdmin(clientId) {
-    const res = await fetch(`${API_URL}/fidelidad/client/${clientId}`, {
+  async searchClientsLoyalty(query) {
+    const res = await fetch(`${API_URL}/fidelidad/search?q=${encodeURIComponent(query)}`, {
       method: 'GET',
-      headers: getHeaders()
+      headers: getHeaders(),
     });
     return handleResponse(res);
   },
 
-  async adjustPointsAdmin(clientId, puntos, motivo) {
-    const res = await fetch(`${API_URL}/fidelidad/adjust`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ id_cliente: clientId, puntos, motivo })
+  async getClientPointsAdmin(clientId) {
+    const res = await fetch(`${API_URL}/fidelidad/client/${clientId}`, {
+      method: 'GET',
+      headers: getHeaders()
     });
     return handleResponse(res);
   },

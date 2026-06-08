@@ -119,6 +119,15 @@ export const api = {
     return handleResponse(res);
   },
 
+  async resolveMapCoordinates(url) {
+    const res = await fetch(`${API_URL}/sucursales/parse-coords`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ url }),
+    });
+    return handleResponse(res);
+  },
+
   async createBranch(data) {
     const res = await fetch(`${API_URL}/sucursales`, {
       method: 'POST',
